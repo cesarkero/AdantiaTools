@@ -14,74 +14,165 @@ library(spatial)
 library(sf)
 library(raster)
 library(sp)
+library(purrr)
+library(rgeos)
+library(lubridate)
 
-# Select the gpx path (use readclipboard() to get the right path in windows). 
+# Select the gpx path (use readclipboard() to get the right path in windows).
 # Use the gpx.folder as a working directory (just temporary)
-g.folder <- "Z:\\De sastre\\CAC\\github\\R_gpx_table\\gpx"
-t.folder <- "Z:\\De sastre\\CAC\\github\\R_gpx_table\\tablas"
-geo <- "Z:\\De sastre\\CAC\\github\\R_gpx_table\\geo"
-epsg.gpx <- 4324
-epsg.new <- 25829
+g.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\gpx\\20130925_26"
+# tables output folder
+t.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\tablas"
+# geo folder to make joins
+geo <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\geo\\PPEE"
+# shp output folder
+shp.out <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\shp\\output"
 
-# Listar archivos solo .gpx
+epsg1 <- CRS("+init=epsg:4324")
+epsg2 <- CRS("+init=epsg:25829")
+epsg2
+
+# list files with .gpx extension
 files <- list.files(g.folder, pattern="*.gpx", full.names=T)
-files
 
 #leer archivos
 gpx1 <- readGPX(files[1],metadata=F,bounds=F, waypoints=T,tracks = T, routes= F)
 gpx2 <- readGPX(files[2],metadata=F,bounds=F, waypoints=T,tracks = T, routes= F)
-gpx3 <- readGPX(files[3],metadata=F,bounds=F, waypoints=T,tracks = T, routes= F)
 
 #GENERACION DE TABLAS WP INDICENCIAS, AVES Y COLISIONES
-#leer waypoints y pasar a data.frame y cambiar nombre de columnas
-cnames <- c('x','y','cod','desc','time','type')
-
 wp1 <- data.frame(gpx1['waypoints'])
-colnames(wp1) <- cnames
-
 wp2 <- data.frame(gpx2['waypoints'])
-colnames(wp2) <- cnames
-
-wp3 <- data.frame(gpx3['waypoints'])
-colnames(wp3) <- cnames
-
-#revisar la lectura de estos gpx pues, en al menos los wp, unos tienen 5 cols y otros 6
-#se podría sortear de la siguiente forma
-#si hay 5 columnas añadir una ultima columna 'desc' al final 
-#si hay 6 columnas mover la columna 4 al final
-
 
 #seleccionar incidencias
-wp3i <- filter(wp3,cod=='I')
+wp1i <- filter(wp1,waypoints.name=='I')
 #seleccionar avifauna. metodo sencillo seleccionando filas con cod==5
-wp3a <- wp3[nchar(wp3$cod)==5,]
+wp1a <- wp1[nchar(wp1$waypoints.name)==5,]
 #seleccionar colisiones
-wp3c <- filter(wp3,cod=='C')
-wp3c
+wp1c <- filter(wp1,waypoints.name=='C')
+#any other code
+wp1o <- filter(wp1, waypoints.name!='I' & waypoints.name !='C' & nchar(wp1$waypoints.name)!=5)
 
 #exportar tablas a csv
-file_name_wp3i <- paste(t.folder,"\\","incidencias_vinculada.csv",sep="")
-file_name_wp3a <- paste(t.folder,"\\","avifauna_vinculada.csv",sep="")
-file_name_wp3c <- paste(t.folder,"\\","colisiones_vinculada.csv",sep="")
+file_name_wp1i <- paste(t.folder,"\\","incidencias_vinculada.csv",sep="")
+file_name_wp1a <- paste(t.folder,"\\","avifauna_vinculada.csv",sep="")
+file_name_wp1c <- paste(t.folder,"\\","colisiones_vinculada.csv",sep="")
+file_name_wp1o <- paste(t.folder,"\\","otros_vinculada.csv",sep="")
 
-write.csv2(wp3i, file = file_name_wp3i,row.names=FALSE, na="")
-write.csv2(wp3a, file = file_name_wp3a,row.names=FALSE, na="")
-write.csv2(wp3a, file = file_name_wp3c,row.names=FALSE, na="")
+write.csv2(wp1i, file = file_name_wp1i,row.names=FALSE, na="")
+write.csv2(wp1a, file = file_name_wp1a,row.names=FALSE, na="")
+write.csv2(wp1c, file = file_name_wp1c,row.names=FALSE, na="")
+write.csv2(wp1o, file = file_name_wp1o,row.names=FALSE, na="")
+#_________________________________________________________________________
+#por hacer:
+#asignacion de especies por cÃ³digo
+#reproyeccion de coordenadas
+#asignacion automatica de fotos en caso de incidencia
+#_________________________________________________________________________
 
-#JOIN DE ATRIBUTOS
-##leer archivo kml y generar geo
-PPEE <- readOGR(geo, PPEE)
-PPEE <- getKMLcoordinates(kmlfile=kmlPPEE, ignoreAltitude=T)
-#make polygon
-p1 = Polygon(PPEE)
-#make Polygon class
-p2 = Polygons(list(p1), ID = "drivetime")
-#make spatial polygons class
-p3= SpatialPolygons(list(p2),proj4string=CRS("+init=epsg:4326"))
+#TRACK POINTS ANALYSIS
+#read trackpoints and create unique data.frame
+tp1 <- gpx1['tracks']
+#create empty df
+t <- data.frame(lon=double(),
+                lat=double(),
+                ele=double(),
+                time=character(),
+                track=integer())
+#create unique data.frame with track number
+for (i in 1:length(combine(tp1))){
+    df <- data.frame(combine(tp1)[i])
+    colnames(df) <- c("lon","lat","ele", "time")
+    track <- mutate(df,track=i)
+    t <- rbind(t,track)
+}
+#add ID
+t$ID <- seq.int(nrow(t))
+t
 
+#function to add coords conversion to df
+UTM29 = function(data,
+                    src.proj = epsg.gpx,
+                    dst.proj = epsg.new) {
+    require(sp)
+    as.data.frame(
+        spTransform(
+            SpatialPointsDataFrame(
+                coords = data.frame(x = t$lon,
+                                    y = t$lat),
+                data = data.frame(ID =  t$ID,
+                                  track = t$track,
+                                  lon = t$lon,
+                                  lat = t$lat,
+                                  ele = t$ele,
+                                  time = t$time),
+                proj4string = src.proj), dst.proj))
 
-wp3a
-crs=epsg.gpx
-wp3a_geo <- st_as_sf(wp3a, coords=c("x","y"), crs=epsg.gpx)
-st_crs(wp3a_geo)
-plot(wp3a_geo)
+}
+t2 <- UTM29(data=t)
+#transform time
+#replace T and z by blank in gps time
+t2$time <- gsub("T", ' ',t2$time)
+t2$time <- gsub("Z", '',t2$time)
+t2
+
+#make spatial data frame
+coords <- data.frame(x=t2$x, y = t2$y)
+t2.sp <- SpatialPointsDataFrame(coords=coords, data=t2,proj4string = epsg2 )
+
+## read shp of ppee
+PPEE <- readOGR(geo, 'PPEE')
+# create buffer 25m by id
+PPEE25m <- gBuffer(PPEE, byid= T, width = 25, quadsegs=10)
+
+#INTERSECT points with buffer 25m
+i <- intersect(t2.sp,PPEE25m)
+
+#merge all
+r <- merge(t2.sp, i, by="ID", all.x=TRUE)
+
+#transform time
+#replace T and z by blank in gps time
+r$time <- gsub("T", ' ',r$time)
+r$time <- gsub("Z", '',r$time)
+names(r)
+
+#identify min and max hour within each 25m buffer
+minT <- data.frame(r) %>%
+    group_by(Aero) %>%
+    summarise(minTime=min(time))
+data.frame(minT)
+maxT <- data.frame(r) %>%
+    group_by(Aero) %>%
+    summarise(maxTime=max(time))
+data.frame(maxT)
+
+#merge dataframes of min and max within 25m buffer
+minmax <- merge(minT, maxT, by="Aero", all.x=T)
+#calculate time betweeen min and max in seconds
+minmax <- mutate(minmax,
+                 tiempo_s = as.numeric(difftime(as_datetime(minmax$maxTime),
+                                 as_datetime(minmax$minTime),
+                                 units="secs")))
+dim(minmax)[1]
+length(minmax)
+
+#extract values in range minTime and maxTime and join all in SpatialLines
+Llist <- list()
+for (i in 1:dim(minmax)[1]){
+    tp <- subset(t2, time>=minmax$minTime[i] & time<=minmax$maxTime[i])
+    l <- cbind(tp$x, tp$y)
+    Sl <- Line(l)
+    S <- Lines(list(Sl1), ID=minmax$Aero[i])
+    Llist[[i]] <- S
+}
+
+#create shp with proyeccion
+Sl <- SpatialLines(list(S), proj4string = epsg2)
+dim(Sl)
+
+#pasar de spatiallines a spatiallinesdataframe que contenga los datos y crs
+Slx <- SpatialLinesDataFrame(sl=Sl, data=minmax, match.ID = F)
+plot(Slx)
+
+#save shp
+writeOGR(obj=Slx, dsn=shp.out, layer="Prospeccion", driver="ESRI Shapefile", overwrite_layer = T)

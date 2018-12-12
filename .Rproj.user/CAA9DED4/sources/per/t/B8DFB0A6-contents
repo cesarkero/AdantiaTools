@@ -1,0 +1,88 @@
+install.packages("dplyr");install.packages("xlsx");install.packages("rgdal")
+install.packages("exifr");install.packages("devtools");install.packages("stringr")
+install.packages("rJava");install.packages("plotKML");install.packages("checkmate")
+install.packages("spatial")
+library(exifr)
+library (dplyr)
+library(devtools)
+library(stringr)
+library(xlsx)
+library(rJava)
+library (rgdal)
+library(plotKML)
+library(spatial)
+library(sf)
+library(raster)
+library(sp)
+library(purrr)
+
+# Select the gpx path (use readclipboard() to get the right path in windows).
+# Use the gpx.folder as a working directory (just temporary)
+g.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\gpx\\20130925_26"
+# tables output folder
+t.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\tablas"
+# geo folder to make joins
+geo <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\geo\\PPEE"
+
+epsg.gpx <- 4324
+epsg.new <- 25829
+
+# list files with .gpx extension
+files <- list.files(g.folder, pattern="*.gpx", full.names=T)
+
+#leer archivos
+gpx1 <- readGPX(files[1],metadata=F,bounds=F, waypoints=T,tracks = T, routes= F)
+gpx2 <- readGPX(files[2],metadata=F,bounds=F, waypoints=T,tracks = T, routes= F)
+
+#GENERACION DE TABLAS WP INDICENCIAS, AVES Y COLISIONES
+wp1 <- data.frame(gpx1['waypoints'])
+wp2 <- data.frame(gpx2['waypoints'])
+
+#seleccionar incidencias
+wp1i <- filter(wp1,waypoints.name=='I')
+#seleccionar avifauna. metodo sencillo seleccionando filas con cod==5
+wp1a <- wp1[nchar(wp1$waypoints.name)==5,]
+#seleccionar colisiones
+wp1c <- filter(wp1,waypoints.name=='C')
+#any other code
+wp1o <- filter(wp1, waypoints.name!='I' & waypoints.name !='C' & nchar(wp1$waypoints.name)!=5)
+
+#exportar tablas a csv
+file_name_wp1i <- paste(t.folder,"\\","incidencias_vinculada.csv",sep="")
+file_name_wp1a <- paste(t.folder,"\\","avifauna_vinculada.csv",sep="")
+file_name_wp1c <- paste(t.folder,"\\","colisiones_vinculada.csv",sep="")
+file_name_wp1o <- paste(t.folder,"\\","otros_vinculada.csv",sep="")
+
+write.csv2(wp1i, file = file_name_wp1i,row.names=FALSE, na="")
+write.csv2(wp1a, file = file_name_wp1a,row.names=FALSE, na="")
+write.csv2(wp1c, file = file_name_wp1c,row.names=FALSE, na="")
+write.csv2(wp1o, file = file_name_wp1o,row.names=FALSE, na="")
+#_________________________________________________________________________
+#por hacer:
+#asignacion de especies por código
+#reproyeccion de coordenadas
+#asignacion automatica de fotos en caso de incidencia
+#_________________________________________________________________________
+
+#read trackpoints
+gpx1
+tp1 <- gpx1['tracks']
+combine(tp1)[2]
+combine()
+
+#JOIN DE ATRIBUTOS
+## read shp
+PPEE <- readOGR(geo, 'PPEE')
+PPEEap <- readOGR(geo, 'PPEE_ap')
+PPEEap2 <- readOGR(geo, 'PPEE_ap_solapes')
+
+
+
+PPEE <- getKMLcoordinates(kmlfile=kmlPPEE, ignoreAltitude=T)
+#make polygon
+p1 = Polygon(PPEE)
+#make Polygon class
+p2 = Polygons(list(p1), ID = "drivetime")
+#make spatial polygons class
+p3= SpatialPolygons(list(p2),proj4string=CRS("+init=epsg:4326"))
+
