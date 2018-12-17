@@ -1,18 +1,30 @@
-library(exifr);library (dplyr);library(devtools);library(stringr)
-library(xlsx);library(rJava);library (rgdal);library(plotKML)
-library(spatial);library(sf);library(raster);library(sp)
-library(purrr);library(rgeos);library(lubridate);library(SDraw)
+library(exifr);
+library (dplyr);
+library(devtools);
+library(stringr)
+library(xlsx);
+library(rJava);
+library (rgdal);
+library(plotKML)
+library(spatial);
+library(sf);
+library(raster);
+library(sp)
+library(purrr);
+library(rgeos);
+library(lubridate);
+library(SDraw)
 
 #PARAMETROS
 # Select the gpx path (use readclipboard() to get the right path in windows).
 
 # Use the gpx.folder as a working directory (just temporary)
-# g.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\gpx"
-g.folder <- "Z:\\Proxectos\\448_Seguementos_PPEE_zonas_4b_5\\3_Seguimento"
+g.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\gpx"
+# g.folder <- "Z:\\Proxectos\\448_Seguementos_PPEE_zonas_4b_5\\3_Seguimento"
 
 # shp output folder
-# shp.out <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\shp\\output"
-shp.out <- "Z:\\Proxectos\\448_Seguementos_PPEE_zonas_4b_5\\AdantiaTools\\Output"
+shp.out <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\output"
+# shp.out <- "Z:\\Proxectos\\448_Seguementos_PPEE_zonas_4b_5\\AdantiaTools\\Output"
 
 # tables output folder
 t.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\tablas"
@@ -27,34 +39,34 @@ wp <- F
 #SHP TOTAL
 TOTAL <- T
 #reread FOLDER
-reread <- F
-
-
+reread <- T
 
 #------------------------------------------------------------------
 #TRACK PROCESS
 
-# list files with .gpx extension
-files <- list.files(g.folder, pattern="*.gpx", full.names=T, recursive = T)
-# gpx <- readGPX(files[1],metadata=F,bounds=F, waypoints=F,tracks = T, routes= F)
-# tp1 <- gpx['tracks']
-# t <- data.frame(lon=double(),
-#                 lat=double(),
-#                 ele=double(),
-#                 time=character(),
-#                 track=integer()
-# )
-# #create unique data.frame with track number
-# for (i in 1:length(combine(tp1))){
-#     df <- data.frame(combine(tp1)[i])
-#     if (length(colnames(df)) != 4){
-#         df <- df[,1:4]
-#     }
-#     colnames(df) <- c("lon","lat","ele", "time")
-#     track <- mutate(df,track=i)
-#     t <- rbind(t,track)
-# }
-# tail(t)
+# list files with .gpx extension and check if reread is T
+if (reread == T){
+    files <- list.files(g.folder, pattern="*.gpx", full.names=T, recursive = T)
+}
+gpx <- readGPX(files[1],metadata=F,bounds=F, waypoints=F,tracks = T, routes= F)
+tp1 <- gpx['tracks']
+t <- data.frame(lon=double(),
+                lat=double(),
+                ele=double(),
+                time=character(),
+                track=integer()
+)
+#create unique data.frame with track number
+for (i in 1:length(combine(tp1))){
+    df <- data.frame(combine(tp1)[i])
+    if (length(colnames(df)) != 4){
+        df <- df[,1:4]
+    }
+    colnames(df) <- c("lon","lat","ele", "time")
+    track <- mutate(df,track=i)
+    t <- rbind(t,track)
+}
+tail(t)
 
 #TRACK POINTS ANALYSIS
 #lista vacia para archivos procesados
@@ -75,7 +87,9 @@ for (f in 1:length(files)){
     gpxName
     #read trackpoints and create unique data.frame
     tp1 <- gpx['tracks']
-    tp1
+    str(tp1)
+    class(head(tp1)[[1]][[1]][1])
+    head(tp1)[[1]][[1]][1]
     #create empty df
     t <- data.frame(lon=double(),
                     lat=double(),
@@ -83,19 +97,27 @@ for (f in 1:length(files)){
                     time=character(),
                     track=integer()
                     )
+    1:length(combine(tp1))
 
+    data.frame(combine(tp1)[2])
+    str(combine(tp1)[2][1][1][1])
+    str(combine(tp1)[3])
 
     #create unique data.frame with track number
     for (i in 1:length(combine(tp1))){
-        df <- data.frame(combine(tp1)[i])
+        df <- data.frame(combine(tp1)[2])
+        str(df)
         if (length(colnames(df)) != 4){
             df <- df[,1:4]
         } else {
             df <- df
         }
+        str(df)
         colnames(df) <- c("lon","lat","ele", "time")
-        track <- mutate(df,track=i)
+        track <- mutate(df,track=3)
         t <- rbind(t,track)
+        str(t)
+        str(track)
     }
     combine(tp1)[2]
     data.frame(combine(tp1)[2])
