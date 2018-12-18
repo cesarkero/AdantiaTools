@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='Utf-8' standalone='yes' ?><gpx xmlns="http://www.topografix.com/GPX/1/0" version="1.0" creator="org.yriarte.tracklogger">
+<trk>
+<trkseg>
+<trkpt lon="-6.85081326" lat="41.98981308">
+  <ele>1578.0</ele>
+  <time>2016-11-16T11:44:06Z</time>
+</trkpt>
+<trkpt lon="-6.85081882" lat="41.98987173">
+  <ele>1582.0</ele>
+  <time>2016-11-16T11:44:10Z</time>
+</trkpt>
+
+</trkseg>
+</trk>
+</gpx>

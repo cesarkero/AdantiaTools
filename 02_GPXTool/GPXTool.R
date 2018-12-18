@@ -1,10 +1,10 @@
 library(exifr);
-library (dplyr);
+library(dplyr);
 library(devtools);
 library(stringr)
 library(xlsx);
 library(rJava);
-library (rgdal);
+library(rgdal);
 library(plotKML)
 library(spatial);
 library(sf);
@@ -14,32 +14,22 @@ library(purrr);
 library(rgeos);
 library(lubridate);
 library(SDraw)
+library(rlist)
 
 #PARAMETROS
-# Select the gpx path (use readclipboard() to get the right path in windows).
-
-# Use the gpx.folder as a working directory (just temporary)
-g.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\gpx"
-# g.folder <- "Z:\\Proxectos\\448_Seguementos_PPEE_zonas_4b_5\\3_Seguimento"
-
-# shp output folder
-shp.out <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\output"
+g.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\gpx" #folder with gpx files
+# g.folder <- "Z:\\Proxectos\\448_Seguementos_PPEE_zonas_4b_5\\3_Seguimento" #folder with gpx files
+shp.out <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\output" # shp output folder
 # shp.out <- "Z:\\Proxectos\\448_Seguementos_PPEE_zonas_4b_5\\AdantiaTools\\Output"
+t.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\tablas" # tables output folder
+geo <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\geo\\PPEE" #shp for joins PPEE
+epsg1 <- CRS("+init=epsg:4326") #epsg gps
+epsg2 <- CRS("+init=epsg:25829") #epsg destino
+wp <- F #procesar waypoints
+TOTAL <- T #SHP TOTAL
+reread <- T #reread FOLDER
+TABLA_PROCESADOS <- T #tabla de archivos procesados
 
-# tables output folder
-t.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\tablas"
-# geo folder to make joins
-geo <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\geo\\PPEE"
-
-#set epsg gpx y epsg destino
-epsg1 <- CRS("+init=epsg:4326")
-epsg2 <- CRS("+init=epsg:25829")
-#procesar wp
-wp <- F
-#SHP TOTAL
-TOTAL <- T
-#reread FOLDER
-reread <- T
 
 #------------------------------------------------------------------
 #TRACK PROCESS
@@ -48,188 +38,157 @@ reread <- T
 if (reread == T){
     files <- list.files(g.folder, pattern="*.gpx", full.names=T, recursive = T)
 }
-gpx <- readGPX(files[1],metadata=F,bounds=F, waypoints=F,tracks = T, routes= F)
-tp1 <- gpx['tracks']
-t <- data.frame(lon=double(),
-                lat=double(),
-                ele=double(),
-                time=character(),
-                track=integer()
-)
-#create unique data.frame with track number
-for (i in 1:length(combine(tp1))){
-    df <- data.frame(combine(tp1)[i])
-    if (length(colnames(df)) != 4){
-        df <- df[,1:4]
-    }
-    colnames(df) <- c("lon","lat","ele", "time")
-    track <- mutate(df,track=i)
-    t <- rbind(t,track)
-}
-tail(t)
 
 #TRACK POINTS ANALYSIS
-#lista vacia para archivos procesados
-procesados <- list()
+procesados <- list() #lista vacía para archivos procesados filepaht
+procesado <- list() #lista vacía para archivos procesados
 
-#treat warnings as errors
-options(warn=2)
-
-
+options(warn=2) #treat warnings as errors
+length(files)
+#FALLO al leer el gpx SI EL GPX ESTA CORRUPTO
 for (f in 1:length(files)){
-    #guardar nombre de archivos procesados
-    procesados <- c(procesados,files[f])
+    # f <- 11
+    #check if gpx is not corrupted
+    GPXok <- try(readGPX(files[f]), silent=T)
 
-    #read gpx file
-    gpx <- readGPX(files[8],metadata=F,bounds=F, waypoints=F,tracks = T, routes= F)
-    #base filename
-    gpxName <- tools::file_path_sans_ext(basename(files[f]))
-    gpxName
-    #read trackpoints and create unique data.frame
-    tp1 <- gpx['tracks']
-    str(tp1)
-    class(head(tp1)[[1]][[1]][1])
-    head(tp1)[[1]][[1]][1]
-    #create empty df
-    t <- data.frame(lon=double(),
-                    lat=double(),
-                    ele=double(),
-                    time=character(),
-                    track=integer()
-                    )
-    1:length(combine(tp1))
+    if (class(GPXok) == "try-error"){
+        procesados <- c(procesados,files[f]) #guardar nombre de archivos procesados
+        procesado <- c(procesado,'corrupto') #add no en PPEE
 
-    data.frame(combine(tp1)[2])
-    str(combine(tp1)[2][1][1][1])
-    str(combine(tp1)[3])
+    } else {
+        gpx <- readGPX(files[f],metadata=F,bounds=F, waypoints=F,tracks = T, routes= F) #read gpx file
+        gpxName <- tools::file_path_sans_ext(basename(files[f])) #base filename
+        tp1 <- gpx['tracks'] #read trackpoints and create unique data.frame
 
-    #create unique data.frame with track number
-    for (i in 1:length(combine(tp1))){
-        df <- data.frame(combine(tp1)[2])
-        str(df)
-        if (length(colnames(df)) != 4){
-            df <- df[,1:4]
-        } else {
-            df <- df
+        #create empty df
+        t <- data.frame(lon=numeric(),
+                        lat=numeric(),
+                        ele=character(),
+                        time=character(),
+                        track=numeric(),
+                        stringsAsFactors=FALSE
+        )
+        #create unique data.frame with track number
+        iteracion <- 1
+        for (i1 in 1:length(combine(tp1))){
+            for (i2 in 1:length(combine(combine(tp1)[i1]))){
+                df <- data.frame(combine(tp1)[[i1]][i2])
+                str(df)
+                if (length(colnames(df)) != 4){
+                    df <- df[,1:4]
+                } else {
+                    df <- df
+                }
+                colnames(df) <- c("lon","lat","ele", "time") #ajustar numero de columnas
+                track <- mutate(df,track=iteracion)
+                t <- rbind(t,track)
+                iteracion <- iteracion+1
+            }
         }
-        str(df)
-        colnames(df) <- c("lon","lat","ele", "time")
-        track <- mutate(df,track=3)
-        t <- rbind(t,track)
-        str(t)
-        str(track)
-    }
-    combine(tp1)[2]
-    data.frame(combine(tp1)[2])
 
-    df <- data.frame(combine(tp1)[2])
+        #add ID to unique df
+        t <- mutate(t,ID=rownames(t))
 
-    #add ID
-    t$ID <- seq.int(nrow(t))
+        #replace T and z by blank in gps time
+        t$time <- gsub("T", ' ',t$time)
+        t$time <- gsub("Z", '',t$time)
 
-    #function to add coords conversion to df
-    UTM29 = function(data,
-                     src.proj = epsg1,
-                     dst.proj = epsg2) {
-        require(sp)
-        as.data.frame(
-            spTransform(
-                SpatialPointsDataFrame(
-                    coords = data.frame(x = t$lon,
-                                        y = t$lat),
-                    data = data.frame(ID =  t$ID,
-                                      track = t$track,
-                                      lon = t$lon,
-                                      lat = t$lat,
-                                      ele = t$ele,
-                                      time = t$time),
-                    proj4string = src.proj), dst.proj))
+        #create spatial objec from coords
+        coordinates(t) <- c("lon","lat")
+        proj4string(t)<-epsg1
+        t2 <- spTransform(t,epsg2)
 
-    }
-    #apply function to add new coord to data
-    t2 <- UTM29(data=t)
+        #add coords to table
+        t2$x <- t2@coords[,1]
+        t2$y <- t2@coords[,2]
 
-    #transform time
-    #replace T and z by blank in gps time
-    t2$time <- gsub("T", ' ',t2$time)
-    t2$time <- gsub("Z", '',t2$time)
+        #GET MIN AND MAX HOUR WITHIN AERO BUFFER
+        PPEE <- readOGR(geo, 'PPEE') # read shp of ppee
+        PPEE25m <- gBuffer(PPEE, byid= T, width = 25, quadsegs=10) # create buffer 25m by id
+        i <- intersect(t2,PPEE25m) #intersect
+        r <- merge(t2, i, by="ID", all.x=TRUE) #merge
+        #identify min and max hour within each 25m buffer
+        minT <- data.frame(r) %>%
+            group_by(Cod_aero) %>%
+            summarise(minTime=min(time))
+        maxT <- data.frame(r) %>%
+            group_by(Cod_aero) %>%
+            summarise(maxTime=max(time))
+        #merge dataframes of min and max within 25m buffer
+        minmax <- merge(minT, maxT, by="Cod_aero", all.x=T)
+        #calculate time betweeen min and max in seconds
+        minmax <- mutate(minmax,
+                         tiempo_s = as.numeric(difftime(as_datetime(minmax$maxTime),
+                                                        as_datetime(minmax$minTime),
+                                                        units="secs")))
 
-    #make spatial data frame
-    coords <- data.frame(x=t2$x, y = t2$y)
-    t2.sp <- SpatialPointsDataFrame(coords=coords, data=t2,proj4string = epsg2 )
+        #ADD VARIABLES
+        minmax <- mutate(minmax, tecnico = str_sub(gpxName,-3,-1)) #add tecnico
+        minmax <- mutate(minmax, filepath = files[f]) #add filepath
 
-    ## read shp of ppee
-    PPEE <- readOGR(geo, 'PPEE')
-    # create buffer 25m by id
-    PPEE25m <- gBuffer(PPEE, byid= T, width = 25, quadsegs=10)
+        #extract values in range minTime and maxTime and join all in SpatialLines
+        L <- list()
+        for (i in 1:dim(minmax)[1]){
+            tp <- subset(as.data.frame(t2), time>=minmax$minTime[i] & time<=minmax$maxTime[i])
+            l <- cbind(tp$x, tp$y)
+            Sl <- Line(l)
+            S <- Lines(list(Sl), ID=minmax$Cod_aero[i])
+            L[[i]] <- S
+        }
 
-    #INTERSECT points with buffer 25m
-    i <- intersect(t2.sp,PPEE25m)
+        #create shp with proyeccion
+        Sl <- SpatialLines(L, proj4string = epsg2)
 
-    #merge all
-    r <- merge(t2.sp, i, by="ID", all.x=TRUE)
+        #pasar de spatiallines a spatiallinesdataframe que contenga los datos y crs
+        Slx <- SpatialLinesDataFrame(sl=Sl, data=minmax, match.ID = F)
 
-    #transform time
-    #replace T and z by blank in gps time
-    r$time <- gsub("T", ' ',r$time)
-    r$time <- gsub("Z", '',r$time)
+        #calculate length of track with function
+        Slx$len <- lineLength(Slx, byid=T)
 
-    #identify min and max hour within each 25m buffer
-    minT <- data.frame(r) %>%
-        group_by(Cod_aero) %>%
-        summarise(minTime=min(time))
-    maxT <- data.frame(r) %>%
-        group_by(Cod_aero) %>%
-        summarise(maxTime=max(time))
+        #FILTROOOOOOOS
+        Slx <- subset(Slx, Slx$len>50) #filter len>50
+        Slx <- subset(Slx, Slx$len/Slx$tiempo_s<=2) #filter len_t less than 2
+        Slx <- Slx <- subset(Slx, Slx$tiempo_s<=1800) #eliminar tiempo superior a 30 min
 
-    #merge dataframes of min and max within 25m buffer
-    minmax <- merge(minT, maxT, by="Cod_aero", all.x=T)
-    #calculate time betweeen min and max in seconds
-    minmax <- mutate(minmax,
-                     tiempo_s = as.numeric(difftime(as_datetime(minmax$maxTime),
-                                                    as_datetime(minmax$minTime),
-                                                    units="secs")))
+        #para descartar gpx de otras zonas que rompan el codigo filtrar por Slx es 0
+        if (length(Slx)==0){
+            print (paste("No se guarda el archivo",gpxName))
+            procesado <- c(procesado,'no en PPEE') #add no en PPEE
+        } else{
+            #join other fiels like cod_aero and parque
+            campos <- c("Cod_aero",
+                        "Aero",
+                        "Cod_parque",
+                        "minTime",
+                        "maxTime",
+                        "tiempo_s",
+                        "len",
+                        "tecnico",
+                        "filepath")
 
-    #add tecnico
-    str(minmax)
-    minmax <- mutate(minmax, tecnico=str_sub(gpxName,-3,-1))
+            Slx2 <-merge(Slx, PPEE, by="Cod_aero", all.x=T)[,campos]
 
-    #extract values in range minTime and maxTime and join all in SpatialLines
-    L <- list()
-    for (i in 1:dim(minmax)[1]){
-        tp <- subset(t2, time>=minmax$minTime[i] & time<=minmax$maxTime[i])
-        l <- cbind(tp$x, tp$y)
-        Sl <- Line(l)
-        S <- Lines(list(Sl), ID=minmax$Cod_aero[i])
-        L[[i]] <- S
-    }
-
-    #create shp with proyeccion
-    Sl <- SpatialLines(L, proj4string = epsg2)
-
-    #pasar de spatiallines a spatiallinesdataframe que contenga los datos y crs
-    Slx <- SpatialLinesDataFrame(sl=Sl, data=minmax, match.ID = F)
-
-    #calculate length of track with function
-    Slx$len <- lineLength(Slx, byid=T)
-
-    #filter len>10 and len<1000
-    Slx <- Slx[Slx$len>10 & Slx$len<1000,]
-
-    #Error in x@lines[[1]] : subscript out of bounds
-    #para descartar gpx de otras zonas que rompan el codigo filtrar por Slx es 0
-    if (length(Slx)==0){
-        print (paste("No se guarda el archivo",gpxName))
-    } else{
-        #join other fiels like cod_aero and parque
-        campos <- c("Cod_aero","Aero","Cod_parque","minTime","maxTime","tiempo_s","len","tecnico")
-        Slx2 <-merge(Slx, PPEE, by="Cod_aero", all.x=T)[,campos]
-        #save shp
-        writeOGR(obj=Slx2, dsn=shp.out, layer=gpxName, driver="ESRI Shapefile", overwrite_layer = T)
+            #save shp
+            writeOGR(obj=Slx2,
+                     dsn=shp.out,
+                     layer=gpxName,
+                     driver="ESRI Shapefile",
+                     overwrite_layer = T)
+            procesado <- c(procesado,'procesado') #add procesado
+        }
+        procesados <- c(procesados,files[f]) #guardar nombre de archivos procesados
     }
 }
 
-procesados
+
+
+if (TABLA_PROCESADOS ==T) {
+    #combinar dos listas en un data.frame
+    tabla <- do.call(rbind, Map(data.frame, filepath=procesados, procesado=procesado))
+    #exportar tablas a csv
+    file_name <- paste(shp.out,"\\","TABLA_PROCESADOS.csv",sep="")
+    write.csv2(tabla, file = file_name,row.names=F, na="")
+}
 
 #TOTAL
 if (TOTAL == T){

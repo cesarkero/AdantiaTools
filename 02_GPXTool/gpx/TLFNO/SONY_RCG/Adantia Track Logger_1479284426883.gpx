@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='Utf-8' standalone='yes' ?><gpx xmlns="http://www.topografix.com/GPX/1/0" version="1.0" creator="org.yriarte.tracklogger">
+<trk>
+<trkseg>
+<trkpt lon="-6.85487149" lat="42.01828056">
+  <ele>1785.0</ele>
+  <time>2016-11-16T09:20:31Z</time>
+</trkpt>
+<trkpt lon="-6.85479283" lat="42.01822121">
+  <ele>1788.0</ele>
+  <time>2016-11-16T09:20:36Z</time>
+</trkpt>
+<trkpt lon="-6.8548258" lat="42.01815339">
+  <ele>1766.0</ele>
+  <time>2016-11-16T09:20:39Z</time>
+</trkpt>
+<trkpt lon="-6.85494334" lat="42.01822127">
+  <ele>1789.0</ele>
+  <time>2016-11-16T09:20:42Z</time>
+</trkpt>
+
+</trkseg>
+</trk>
+</gpx>
