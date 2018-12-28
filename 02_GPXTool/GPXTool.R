@@ -27,9 +27,8 @@ epsg1 <- CRS("+init=epsg:4326") #epsg gps
 epsg2 <- CRS("+init=epsg:25829") #epsg destino
 wp <- F #procesar waypoints
 TOTAL <- T #SHP TOTAL
-reread <- T #reread FOLDER
+reread <- T#reread FOLDER
 TABLA_PROCESADOS <- T #tabla de archivos procesados
-
 
 #------------------------------------------------------------------
 #TRACK PROCESS
@@ -47,7 +46,7 @@ options(warn=2) #treat warnings as errors
 
 #FALLO al leer el gpx SI EL GPX ESTA CORRUPTO
 for (f in 1:length(files)){
-    f <- 1769
+    # f <- 1770
     #check if gpx is not corrupted
     GPXok <- try(readGPX(files[f]), silent=T)
 
@@ -68,6 +67,7 @@ for (f in 1:length(files)){
             procesados <- c(procesados,files[f]) #guardar nombre de archivos procesados
             procesado <- c(procesado,'track null') #add no en PPEE
         } else { #PROCEEES
+
             #create empty df
             t <- data.frame(lon=numeric(),
                             lat=numeric(),
@@ -100,6 +100,8 @@ for (f in 1:length(files)){
             #replace T and z by blank in gps time
             t$time <- gsub("T", ' ',t$time)
             t$time <- gsub("Z", '',t$time)
+
+
 
             #create spatial objec from coords
             coordinates(t) <- c("lon","lat")
