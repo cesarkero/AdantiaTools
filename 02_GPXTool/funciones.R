@@ -138,6 +138,28 @@ PPEElines <- function(points, PPEE25m, Cod_aero, gpxName, filepath,
     return (Slx)
 }
 
+#________________________________________________________
+#EmptySLDF
+#create an empty dataframe from a list of var names
+EmptySLDF <- function (shpnames=c("Cod_aero","Aero","Cod_Parque","minTime",
+                             "maxTime","tiempo_s","len","tecnico","filepath")){
+    s = SpatialLinesDataFrame(
+        sl=SpatialLines(
+            LinesList=list(
+                Lines(
+                    list(
+                        Line(
+                            coords=matrix(c(0,1,0,1),2,2)
+                        )
+                    ),ID=1)
+            )
+        ),
+        data=data.frame(matrix(ncol=length(shpnames), nrow=1)))[-1,]
+    crs(s) <- epsg #set epsg
+    names(s) <- shpnames
+    return(s)
+}
+
 
 #---------------------------------------------------------------------------
 # #PROCESAR WAYPOINTS
