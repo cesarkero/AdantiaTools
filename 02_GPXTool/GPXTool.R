@@ -19,8 +19,11 @@ library(rlist)
 #PARAMETROS
 # g.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\gpx" #folder with gpx files
 g.folder <- "Z:\\Proxectos\\448_Seguementos_PPEE_zonas_4b_5\\3_Seguimento" #folder with gpx files
+
 # shp.out <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\output" # shp output folder
-shp.out <- "Z:\\Proxectos\\448_Seguementos_PPEE_zonas_4b_5\\AdantiaTools\\Output"
+# shp.out <- "Z:\\Proxectos\\448_Seguementos_PPEE_zonas_4b_5\\AdantiaTools\\Output"
+shp.out <- "C:\\Users\\cac\\Dropbox\\Adantia_gpx"
+
 t.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\tablas" # tables output folder
 geo <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\geo\\PPEE" #shp for joins PPEE
 epsg1 <- CRS("+init=epsg:4326") #epsg gps
@@ -37,6 +40,10 @@ TABLA_PROCESADOS <- T #tabla de archivos procesados
 if (reread == T){
     files <- list.files(g.folder, pattern="*.gpx", full.names=T, recursive = T)
 }
+
+#copy files to new folder
+file.copy(files,shp.out, overwrite = F)
+files[1]
 
 #TRACK POINTS ANALYSIS
 procesados <- list() #lista vacía para archivos procesados filepaht
