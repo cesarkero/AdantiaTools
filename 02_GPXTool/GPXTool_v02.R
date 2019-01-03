@@ -1,4 +1,4 @@
-source("C:/GitHub/AdantiaTools/02_GPXTool/funciones.R")
+source("C:/GitHub/AdantiaTools/funciones.R")
 
 #PARAMETROS
 #FILES
@@ -104,5 +104,5 @@ file_name_results <- paste(shp.out,"\\","resultados.csv",sep="")
 write.csv2(data.frame(shp0), file= file_name_results, row.names=F, na="")
 
 #NOTAS
-# sería mejor crear un spatiallines dentro de la función donde se fueran juntando los shp creados
+# ser?a mejor crear un spatiallines dentro de la funci?n donde se fueran juntando los shp creados
 # para ello hay que crear un spatiallines identico al final pero vacio donde se vayan haciendo los merge

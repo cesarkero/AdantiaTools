@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1546529388186.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3864278230",
+    "id" : "33C1C7F7",
+    "lastKnownWriteTime" : 1546537019,
+    "last_content_update" : 1546537019563,
+    "path" : "C:/GitHub/AdantiaTools/01_FotosTool/FotosTool.R",
+    "project_path" : "01_FotosTool/FotosTool.R",
+    "properties" : {
+        "cursorPosition" : "24,89",
+        "scrollLine" : "12"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
