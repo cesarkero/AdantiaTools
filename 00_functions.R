@@ -1,5 +1,24 @@
-if("plotKML" %in% rownames(installed.packages()) == FALSE) {install.packages("plotKML")}
-library(plotKML)
+library(base)
+if("digest" %in% rownames(installed.packages()) == FALSE) {install.packages("digest")}
+library(digest)
+if("tidyselect" %in% rownames(installed.packages()) == FALSE) {install.packages("tidyselect")}
+library(tidyselect)
+if("tibble" %in% rownames(installed.packages()) == FALSE) {install.packages("tibble")}
+library(tibble)
+if("rlang" %in% rownames(installed.packages()) == FALSE) {install.packages("rlang")}
+library(rlang)
+if("zoo" %in% rownames(installed.packages()) == FALSE) {install.packages("zoo")}
+library(zoo)
+if("FNN" %in% rownames(installed.packages()) == FALSE) {install.packages("FNN")}
+library(FNN)
+if("xts" %in% rownames(installed.packages()) == FALSE) {install.packages("xts")}
+library(xts)
+if("XML" %in% rownames(installed.packages()) == FALSE) {install.packages("XML")}
+library(XML)
+if("classInt" %in% rownames(installed.packages()) == FALSE) {install.packages("classInt")}
+library(classInt)
+if("scales" %in% rownames(installed.packages()) == FALSE) {install.packages("scales")}
+library(scales)
 if("dplyr" %in% rownames(installed.packages()) == FALSE) {install.packages("dplyr")}
 library(dplyr)
 if("devtools" %in% rownames(installed.packages()) == FALSE) {install.packages("devtools")}
@@ -12,6 +31,8 @@ if("xlsx" %in% rownames(installed.packages()) == FALSE) {install.packages("xlsx"
 library(xlsx)
 if("rgdal" %in% rownames(installed.packages()) == FALSE) {install.packages("rgdal")}
 library(rgdal)
+if("plotKML" %in% rownames(installed.packages()) == FALSE) {install.packages("plotKML")}
+library(plotKML)
 if("spatial" %in% rownames(installed.packages()) == FALSE) {install.packages("spatial")}
 library(spatial)
 if("sf" %in% rownames(installed.packages()) == FALSE) {install.packages("sf")}
@@ -36,23 +57,35 @@ if("stringr" %in% rownames(installed.packages()) == FALSE) {install.packages("st
 library(stringr)
 if("tinytex" %in% rownames(installed.packages()) == FALSE) {install.packages("tinytex")}
 library(tinytex)
-if("rmarkdown" %in% rownames(installed.packages()) == FALSE) {install.packages("rmarkdown")}
-library(rmarkdown)
-install.packages("devtools")
-library(devtools)
-install_version("rmarkdown",version=1.8)
-library(rmarkdown)
-if("bookdown" %in% rownames(installed.packages()) == FALSE) {install.packages("bookdown")}
-library(bookdown)
-
 
 #___________________________________________________________________________________________
+#CopyFilesExtructure
+#Funcion para copiar todod los arhivos de una lista y mantener estructura de carpetas desde disco
+CopyFilesExtructure <- function (files,newdir) {
+    split_path <- function(path) {
+        setdiff(strsplit(path,"/|\\\\")[[1]], "")
+    } 
+    
+    for (f in files){
+        newpath <- newdir
+        splitedPath <- split_path(f)[-1] #eliminar elemento disco
+        splitedPath <- splitedPath[1:length(splitedPath)-1] #eliminar elemento archivo
+        for (p in splitedPath){
+            newnewpath <- file.path(newpath, p)
+            dir.create(newnewpath, showWarnings = F)
+            newpath <- newnewpath
+        }
+        file.copy(f, newpath, overwrite = T, recursive = T, copy.mode = TRUE)
+    }
+}
+
+
+#-----------------------------------------------------------------------------
 #TrackToDF
 #Reed trackspoints from a gpx file (class string - filepath) and returns a
 #data.frame with lon, lat, ele and time
-TrackToDF <- function (gpxpath){
-    gpx <- readGPX(gpxpath,metadata=F,bounds=F, waypoints=F,tracks = T, routes= F) #read gpx file
-    tp <- gpx['tracks'] #read trackpoints and create unique data.frame
+TrackToDF <- function (gpx){
+    tracks <- gpx['tracks'] #read trackpoints and create unique data.frame
 
     #create empty df
     t <- data.frame(lon=numeric(),
@@ -62,23 +95,29 @@ TrackToDF <- function (gpxpath){
                     track=numeric(),
                     stringsAsFactors=FALSE
     )
+
     #create unique data.frame with track number
     iteracion <- 1
-    for (i1 in 1:length(combine(tp))){
-        for (i2 in 1:length(combine(combine(tp)[i1]))){
-            df <- data.frame(combine(tp)[[i1]][i2])
-            if (length(colnames(df)) != 4){
-                df <- df[,1:4]
+    for (i1 in 1:length(combine(tracks))){
+        for (i2 in 1:length(combine(combine(tracks)[i1]))){
+            df <- data.frame(combine(tracks)[[i1]][i2])
+            if (nrow(df)<2){ #eliminar df con puntos insuficientes
+                #no sucede nada porque es una secuencia nula
             } else {
-                df <- df
+                if (length(colnames(df)) != 4){
+                    df <- df[,1:4]
+                } else {
+                    df <- df
+                }
+                colnames(df) <- c("lon","lat","ele", "time") #adjust number of columns
+                track <- mutate(df,track=iteracion)
+                t <- rbind(t,track)
+                iteracion <- iteracion+1
             }
-            colnames(df) <- c("lon","lat","ele", "time") #adjust number of columns
-            track <- mutate(df,track=iteracion)
-            t <- rbind(t,track)
             iteracion <- iteracion+1
         }
     }
-
+    
     #add ID to unique df
     t <- mutate(t,ID=rownames(t))
     #replace T and z by blank in gps time
@@ -88,6 +127,7 @@ TrackToDF <- function (gpxpath){
     #output
     return (t)
 }
+t
 #--------------------------------------------------------------------------------
 
 #DFtoPoints
@@ -95,6 +135,8 @@ TrackToDF <- function (gpxpath){
 DFToPoints01 <- function(df,
                        epsg1 = CRS("+init=epsg:4326"),
                        epsg2 = CRS("+init=epsg:25829")){
+    df <- t
+    t
     #create spatial objec from coords
     coordinates(df) <- c("lon","lat")
     proj4string(df) <- epsg1
@@ -111,7 +153,7 @@ DFToPoints01 <- function(df,
 #intersecta los track points con PPEE, selecciona minimo y maximo dentro del radio
 #y crea una linea a partir de los puntos entre ese rango de minimo y maximo
 PPEElines <- function(points, PPEE25m, Cod_aero, gpxName, filepath,
-                      epsg){
+                      epsg = CRS("+init=epsg:25829")){
     i <- intersect(points,PPEE25m) #intersect
     r <- merge(points, i, by="ID", all.x=TRUE) #merge
     #identify min and max hour within each 25m buffer
@@ -156,9 +198,10 @@ PPEElines <- function(points, PPEE25m, Cod_aero, gpxName, filepath,
 
 #---------------------------------------------------------------------
 #EmptySLDF
-#create an empty dataframe from a list of var names
+#create an empty dataframe from a list of var names . epsg 25829 by default
 EmptySLDF <- function (shpnames=c("Cod_aero","Aero","Cod_Parque","minTime",
-                             "maxTime","tiempo_s","len","tecnico","filepath")){
+                             "maxTime","tiempo_s","len","tecnico","filepath"),
+                       epsg = CRS("+init=epsg:25829")){
     s = SpatialLinesDataFrame(
         sl=SpatialLines(
             LinesList=list(
