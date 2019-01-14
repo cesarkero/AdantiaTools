@@ -57,6 +57,15 @@ if("stringr" %in% rownames(installed.packages()) == FALSE) {install.packages("st
 library(stringr)
 if("tinytex" %in% rownames(installed.packages()) == FALSE) {install.packages("tinytex")}
 library(tinytex)
+if("parallel" %in% rownames(installed.packages()) == FALSE) {install.packages("parallel")}
+library(parallel)
+if("rbenchmark" %in% rownames(installed.packages()) == FALSE) {install.packages("rbenchmark")}
+library(rbenchmark)
+if("snow" %in% rownames(installed.packages()) == FALSE) {install.packages("snow")}
+library(snow)
+if("MASS" %in% rownames(installed.packages()) == FALSE) {install.packages("MASS")}
+library(MASS)
+
 
 #___________________________________________________________________________________________
 #CopyFilesExtructure
@@ -82,7 +91,7 @@ CopyFilesExtructure <- function (files,newdir) {
 
 #-----------------------------------------------------------------------------
 #TrackToDF
-#Reed trackspoints from a gpx file (class string - filepath) and returns a
+#Read trackspoints from a gpx file (class string - filepath) and returns a
 #data.frame with lon, lat, ele and time
 TrackToDF <- function (gpx){
     tracks <- gpx['tracks'] #read trackpoints and create unique data.frame
@@ -127,7 +136,7 @@ TrackToDF <- function (gpx){
     #output
     return (t)
 }
-t
+
 #--------------------------------------------------------------------------------
 
 #DFtoPoints
@@ -135,8 +144,7 @@ t
 DFToPoints01 <- function(df,
                        epsg1 = CRS("+init=epsg:4326"),
                        epsg2 = CRS("+init=epsg:25829")){
-    df <- t
-    t
+
     #create spatial objec from coords
     coordinates(df) <- c("lon","lat")
     proj4string(df) <- epsg1
@@ -152,7 +160,8 @@ DFToPoints01 <- function(df,
 #PPEElines
 #intersecta los track points con PPEE, selecciona minimo y maximo dentro del radio
 #y crea una linea a partir de los puntos entre ese rango de minimo y maximo
-PPEElines <- function(points, PPEE25m, Cod_aero, gpxName, filepath,
+#usa el campo Cod_aero como atributo de union
+PPEElines <- function(points, PPEE25m, gpxName, filepath,
                       epsg = CRS("+init=epsg:25829")){
     i <- intersect(points,PPEE25m) #intersect
     r <- merge(points, i, by="ID", all.x=TRUE) #merge
@@ -199,9 +208,10 @@ PPEElines <- function(points, PPEE25m, Cod_aero, gpxName, filepath,
 #---------------------------------------------------------------------
 #EmptySLDF
 #create an empty dataframe from a list of var names . epsg 25829 by default
-EmptySLDF <- function (shpnames=c("Cod_aero","Aero","Cod_Parque","minTime",
+EmptySLDF <- function (AtributosPPEE=c("Cod_aero","Aero","Cod_Parque","minTime",
                              "maxTime","tiempo_s","len","tecnico","filepath"),
                        epsg = CRS("+init=epsg:25829")){
+    
     s = SpatialLinesDataFrame(
         sl=SpatialLines(
             LinesList=list(
@@ -213,13 +223,96 @@ EmptySLDF <- function (shpnames=c("Cod_aero","Aero","Cod_Parque","minTime",
                     ),ID=1)
             )
         ),
-        data=data.frame(matrix(ncol=length(shpnames), nrow=1)))[-1,]
+        data=data.frame(matrix(ncol=length(AtributosPPEE), nrow=1)))[-1,]
     crs(s) <- epsg #set epsg
-    names(s) <- shpnames
+    names(s) <- AtributosPPEE
     return(s)
 }
 
+#----------------------------------------------------------------------------
+#GPXTool
+GPXTool <- function (filepath, 
+                     PPEE25m, 
+                     AtributosPPEE = c("Cod_aero","Aero","Cod_parque","minTime","maxTime","tiempo_s","len","tecnico","filepath")) {
+   
+    gpxName <- tools::file_path_sans_ext(basename(filepath)) #base filename
+    filepath <- filepath #filepath
+    
+    if (class(try(readGPX(filepath),silent=T)) == "try-error"){
+        
+        #si no funciona asi habra que hacer un rbind a partir de una tabla predefinida
+        tabla <- data.frame(filepath = filepath, estado="archivo corrupto") #add no en PPEE
+        return (list(NA,tabla))
+        
+    } else {
+        
+        gpx <- readGPX(filepath,metadata=F,bounds=F, waypoints=F,tracks = T, routes= F) #read gpx file
+        
+        #RPOCESO con 3 funciones principales a prueba TrackToDF, DFToPoints01 y TrackToDF
+        if (class(try(TrackToDF(gpx),silent=T)) == "try-error"){
+            
+            tabla <- data.frame(filepath=filepath,estado="error 01 en DFToPoints01") #add no en PPEE
+            return (list(NA,tabla))
+            
+        } else {
+            
+            t <- TrackToDF(gpx) #gpx track to dataframe
+            
+            if (nrow(t)<2){
+                
+                tabla <- data.frame(filepath=filepath,estado="DF vacío tras TrackToDF") #conjunto vacio
+                return (list(NA,tabla))
+                
+            } else {
+                
+                if (class(try(DFToPoints01(t),silent=T)) == "try-error"){
+                    
+                    tabla <- data.frame(filepath=filepath,estado="error 02 en DFToPoints01") #add no en PPEE
+                    return (list(NA,tabla))
+                    
+                } else {
+                    
+                    t2 <- DFToPoints01(t) #df to points from epsg 4326 to epsg 25829
+                    
+                    if (class(try(PPEElines(t2, PPEE25m, gpxName, filepath), silent=T)) == "try-error"){
+                        
+                        tabla <- data.frame(filepath = filepath,estado="error 03 en PPEElines - interseccion") #add no en PPEE
+                        return (list(NA,tabla))
+                        
+                    } else {
+                        
+                        Slx <- PPEElines(t2, PPEE25m, gpxName, filepath) #track in 25m buffer
+                        
+                        #FILTROOOOOOOS
+                        Slx <- subset(Slx, Slx$len>50) #filter len>50
+                        Slx <- subset(Slx, Slx$len/Slx$tiempo_s<=2) #filter len_t less than 2
+                        Slx <- subset(Slx, Slx$tiempo_s<=1800) #eliminar tiempo superior a 30 min
+                        Slx <- Slx[!(is.na(Slx$Cod_aero) | Slx$Cod_aero==""), ] #eliminar tracks con Aero no asignado
+                        
+                        if (length(Slx)==0){
+                            
+                            tabla <- data.frame(filepath=filepath,estado="gpx no en PPEE") #add no en PPEE
+                            return (list(NA,tabla))
+                            
+                        } else {
+                            #merge Slx2 with the shp
+                            crs(PPEE25m) <- crs(Slx)
+                            Slx2 <-merge(Slx, PPEE25m, by="Cod_aero", all.x=T) [,AtributosPPEE] #merge with PPEE info
+                            tabla <- data.frame(filepath=filepath,estado="procesado") #add procesado
+                            return (list(Slx2,tabla))
+                            
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
+
+
+
+#______________________________________________________________________________
 #---------------------------------------------------------------------------
 # #PROCESAR WAYPOINTS
 # if (wp == T) {
