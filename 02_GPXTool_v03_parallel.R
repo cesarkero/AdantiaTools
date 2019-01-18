@@ -1,39 +1,29 @@
-source("C:/GitHub/AdantiaTools/00_functions.R")
+#read functions depending on OS
+ifelse(Sys.info()[[1]] == "Windows",
+       source("C:/GitHub/AdantiaTools/00_functions.R"),
+       source("/data/home/cesarkero/Dropbox/Azure/00_functions.R"))
 
 #PARAMETROS
-#FILES
-g.folder <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\gpx" #folder with gpx files
-shp.out <- "C:\\GitHub\\AdantiaTools\\02_GPXTool\\output" # shp output folder
-AtributosPPEE <- c("Cod_aero","Aero","Cod_parque","minTime","maxTime","tiempo_s","len","tecnico","filepath")
-shp0 <- EmptySLDF(AtributosPPEE) #creates empty SLDF from names
+g.folder <- choose.dir(default = "C:\\GitHub\\AdantiaTools\\02_GPXTool\\gpx",
+           caption = "Select folder with gpx files:")
+output.folder <- choose.dir(default = "C:\\GitHub\\AdantiaTools\\02_GPXTool\\output",
+                            caption = "Select output folder:")
+PPEE.folder <- choose.dir(default = "C:\\GitHub\\AdantiaTools\\000_GEO\\PPEE",
+                         caption = "Select folder with PPEE.shp (points):")
 
-#TOTALES TABLA
-tabla <- data.frame(matrix(ncol=2, nrow=0)); colnames(tabla) <- c("filepath","estado")
-tabla
-#PPEE
-geo <- "C:\\GitHub\\AdantiaTools\\000_GEO\\PPEE" #shp for joins PPEE
-PPEE <- readOGR(geo, 'PPEE') # read shp of ppee
+AtributosPPEE <- c("Cod_aero","Aero","Cod_parque","minTime","maxTime","tiempo_s",
+                   "len","tecnico","filepath")
+
+files <- list.files(g.folder, pattern="*.gpx", full.names=T, recursive = T) #creates a list of files
+PPEE <- readOGR(PPEE.folder, 'PPEE')
 PPEE25m <- gBuffer(PPEE, byid= T, width = 25, quadsegs=10) # create buffer 25m by id
 
-INDIVIDUAL <- F #guarda cada SHP individual
-reread <- T #reread FOLDER
+#-------------------------------------------------------------------------------
+# PBLAPPLY
+l1 <- pblapply(files, GPXTool, PPEEbuffer = PPEE25m, AtributosPPEE = AtributosPPEE) #PROCESS FILES WITH PBLAPPLY
 
-#------------------------------------------------------------------
-#TRACK PROCESS
-# list files with .gpx extension and check if reread is T
-if (reread == T){
-    files <- list.files(g.folder, pattern="*.gpx", full.names=T, recursive = T)
-}
-files <- files[1:25]
-
-#------------------------------------------
-#Proceso lapply
-l1 <-  lapply(files,
-              GPXTool,
-              PPEEbuffer = PPEE25m)
-
-#------------------------------------------------------
-#proceso de parallel para windows NO FUNCIONA TODAVIA
+#-------------------------------------------------------------------------------
+# PARALLEL
 no_cores <- detectCores() - 1 # Calculate the number of cores
 cl <- makeCluster(no_cores, type="SOCK") # Initiate cluster
 
@@ -41,59 +31,52 @@ cl <- makeCluster(no_cores, type="SOCK") # Initiate cluster
 clusterExport(cl=cl, objects())
 clusterExport(cl=cl, as.list(ls()),
               envir=environment())
-l2 <- parLapply(cl,
+l1 <- parLapply(cl,
                 files,
                 GPXTool,
-                PPEEbuffer = PPEE25m)
+                PPEEbuffer = PPEE25m,
+                AtributosPPEE = AtributosPPEE)
 stopCluster(cl)
 
-#-----------------------------------------------
-#merge all valid shp in the list
-for (i in 1:length(l1)) {
-    if (!is.na(l1[i][[1]][[1]])){
-        shp0 <- rbind(shp0,l1[i][[1]][[1]])
-    }
-}
-# save shp TOTAL
-writeOGR(obj=shp0, dsn=shp.out,
-         layer="TOTAL",
-         driver="ESRI Shapefile",
+
+#-------------------------------------------------------------------------------
+# OUTPUT
+# MERGE files
+l1.shp <- pblapply(l1, '[[', 1) #lista de elementos en posicion 1 de cada sublista
+l1.shp <- l1.shp[!is.na(l1.shp)] #remove NA shp
+shp0 <- do.call(rbind, l1.shp) #rbind of all shp in the list
+l1.tabla <- pblapply(l1, '[[', 2) #merge tables
+tabla0 <- do.call(rbind, l1.tabla) #merge all tables
+
+# EXPORT SHP
+writeOGR(obj=shp0, dsn=output.folder, layer="TOTAL",driver="ESRI Shapefile",
          overwrite_layer = T)
-
-#save results table
-file_name_results <- paste(shp.out,"\\","resultados.csv",sep="")
-write.csv2(data.frame(shp0), file= file_name_results, row.names=F, na="")
-
-#save status table
-#merge all valid shp in the list
-for (i in 1:length(l1)) {
-    tabla <- rbind(tabla,l1[i][[1]][[2]])
-}
-colnames(tabla) <- c("filepath", "estado")
-file_name_proceso <- paste(shp.out, "\\", "archivos_procesados.csv", sep="")
-write.csv2(tabla, file = file_name_proceso, row.names=F, na="")
-
+write.csv2(data.frame(shp0),
+           file= paste(output.folder,"\\","resultados.csv",sep=""),
+           row.names=F, na="")
+# EXPORT TABLE
+write.csv2(tabla0,
+           file = paste(output.folder, "\\", "archivos_procesados.csv", sep=""),
+           row.names=F, na="")
 
 #-----------------------------------------------------------------------
-#benchmark -- NO FUNCIONA PORQUE AUN NO ESTA PARLAPPLY LISTO
-benchmark("lapply" = {l1 <-  lapply(files,
-                                    GPXTool,
-                                    PPEEbuffer = PPEE25m)},
-          "parLapply" = {
-              #proceso de parallel para windows NO FUNCIONA TODAVIA
-              no_cores <- detectCores() - 1 # Calculate the number of cores
-              cl <- makeCluster(no_cores, type="SOCK") # Initiate cluster
-              
-              #export objects and functions
-              clusterExport(cl=cl, objects())
-              clusterExport(cl=cl, as.list(ls()),
-                            envir=environment())
-              l2 <- parLapply(cl,
-                              files,
-                              GPXTool,
-                              PPEEbuffer = PPEE25m)
-              stopCluster(cl)
-          },
-          replications = 1,
-          columns = c("test", "replications", "elapsed")
-)
+# #benchmark de GPXTool
+# benchmark("lapply" = {l1 <- pblapply(files, GPXTool, PPEEbuffer = PPEE25m, AtributosPPEE = AtributosPPEE)},
+#           "parLapply" = {
+#               no_cores <- detectCores() - 1 # Calculate the number of cores
+#               cl <- makeCluster(no_cores, type="SOCK") # Initiate cluster
+#               
+#               #export objects and functions
+#               clusterExport(cl=cl, objects())
+#               clusterExport(cl=cl, as.list(ls()),
+#                             envir=environment())
+#               l1 <- parLapply(cl,
+#                               files,
+#                               GPXTool,
+#                               PPEEbuffer = PPEE25m,
+#                               AtributosPPEE = AtributosPPEE)
+#               stopCluster(cl)
+#           },
+#           replications = 5,
+#           columns = c("test", "replications", "elapsed")
+# )

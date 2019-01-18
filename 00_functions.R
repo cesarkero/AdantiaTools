@@ -65,6 +65,35 @@ if("snow" %in% rownames(installed.packages()) == FALSE) {install.packages("snow"
 library(snow)
 if("MASS" %in% rownames(installed.packages()) == FALSE) {install.packages("MASS")}
 library(MASS)
+if("pbapply" %in% rownames(installed.packages()) == FALSE) {install.packages("pbapply")}
+library(pbapply)
+if("data.table" %in% rownames(installed.packages()) == FALSE) {install.packages("data.table")}
+library(data.table)
+if("tcltk" %in% rownames(installed.packages()) == FALSE) {install.packages("tcltk")}
+library(tcltk)
+if("easycsv" %in% rownames(installed.packages()) == FALSE) {install.packages("easycsv")}
+library(easycsv)
+
+#_______________________________________________________________________________
+# CHOOSE DIRECTORY
+choose_gpx_folder = function(caption = 'Select _______ file/directory:') {
+    if (Sys.info()[[1]] == "Windows") {
+        if (grep('gpx', caption, ignore.case = T) >=1) {
+            choose.dir(default = "C:\\GitHub\\AdantiaTools\\02_GPXTool\\gpx",
+                       caption = "Select folder with gpx files:")
+        } else if (grep('output', caption, ignore.case = T) >=1){
+            choose.dir(default = "C:\\GitHub\\AdantiaTools\\02_GPXTool\\output",
+                       caption = "Select output folder:")
+        }
+         
+    } else {
+        ifelse(Sys.info()[[1]] == "Linux", rstudioapi::choose_dir(caption = caption),
+               tk_choose.dir(caption = caption))
+    }
+}
+
+t1 <- 'Select .Gpx directory:'
+grep('gpx', t1, ignore.case = T) >=1
 
 
 #___________________________________________________________________________________________
@@ -74,7 +103,7 @@ CopyFilesExtructure <- function (files,newdir) {
     split_path <- function(path) {
         setdiff(strsplit(path,"/|\\\\")[[1]], "")
     } 
-    
+
     for (f in files){
         newpath <- newdir
         splitedPath <- split_path(f)[-1] #eliminar elemento disco
@@ -88,7 +117,6 @@ CopyFilesExtructure <- function (files,newdir) {
     }
 }
 
-
 #-----------------------------------------------------------------------------
 #TrackToDF
 #Read trackspoints from a gpx file (class string - filepath) and returns a
@@ -97,41 +125,30 @@ TrackToDF <- function (gpx){
     tracks <- gpx['tracks'] #read trackpoints and create unique data.frame
 
     #create empty df
-    t <- data.frame(lon=numeric(),
-                    lat=numeric(),
-                    ele=character(),
-                    time=character(),
-                    track=numeric(),
-                    stringsAsFactors=FALSE
-    )
+    t <- data.frame(lon=numeric(), lat=numeric(), ele=character(),
+                    time=character(), track=numeric(), stringsAsFactors=FALSE)
 
     #create unique data.frame with track number
     iteracion <- 1
     for (i1 in 1:length(dplyr::combine(tracks))){
         for (i2 in 1:length(dplyr::combine(dplyr::combine(tracks)[i1]))){
             df <- data.frame(dplyr::combine(tracks)[[i1]][i2])
-            if (raster::nrow(df) < 2){ #eliminar df con puntos insuficientes
-                #no sucede nada porque es una secuencia nula
-            } else {
-                if (length(colnames(df)) != 4){
-                    df <- df[,1:4]
-                } else {
-                    df <- df
-                }
-                colnames(df) <- c("lon","lat","ele", "time") #adjust number of columns
-                track <- dplyr::mutate(df,track=iteracion)
-                t <- rbind(t,track)
+            if (raster::nrow(df) >= 2){ #filtra por puntos suficientes
+                ifelse(length(colnames(df)) != 4, df <- df[,1:4], df <- df) #set df with 4 cols
+                colnames(df) <- c("lon","lat","ele", "time") #adjust name of columns
+                track <- dplyr::mutate(df, track=iteracion)
+                t <- rbind(t, track)
                 iteracion <- iteracion+1
+            } else {
+                iteracion <- iteracion+1 #no sucede nada porque es una secuencia nula
             }
-            iteracion <- iteracion+1
         }
     }
    
     #add ID to unique df
     t <- dplyr::mutate(t,ID=rownames(t))
     #replace T and z by blank in gps time
-    t$time <- gsub("T", ' ',t$time)
-    t$time <- gsub("Z", '',t$time)
+    t$time <- gsub("T", ' ',t$time) ; t$time <- gsub("Z", '',t$time)
 
     #output
     return (t)
@@ -161,7 +178,7 @@ DFToPoints01 <- function(df,
 #y crea una linea a partir de los puntos entre ese rango de minimo y maximo
 #usa el campo Cod_aero como atributo de union
 PPEElines <- function(Tpoints, buffer, epsg = sp::CRS("+init=epsg:25829")){
-    library(dplyr)
+    library(dplyr) # hubo que meterla para que funcion para que funciones %>%
     i <- lubridate::intersect(Tpoints, buffer) #intersect
     r <- raster::merge(Tpoints, i, by="ID", all.x=TRUE) #merge
     #identify min and max hour within each 25m buffer
@@ -234,6 +251,7 @@ GPXTool <- function (path,
     gpxName <- tools::file_path_sans_ext(basename(path)) #base filename
     
     if (class(try(plotKML::readGPX(path),silent=T)) == "try-error"){
+
         tabla <- data.frame(filepath = path, estado="archivo corrupto") #add no en PPEE
         return (list(NA,tabla))
         
@@ -249,7 +267,7 @@ GPXTool <- function (path,
             t <- TrackToDF(gpx) #gpx track to dataframe
             
             if (nrow(t)<2){
-                tabla <- data.frame(filepath = path, estado="DF vacío tras TrackToDF") #conjunto vacio
+                tabla <- data.frame(filepath = path, estado="DF vacio tras TrackToDF") #conjunto vacio
                 return (list(NA,tabla))
                 
             } else {
@@ -264,9 +282,7 @@ GPXTool <- function (path,
                                             buffer = PPEEbuffer,
                                             epsg = sp::CRS("+init=epsg:25829")), silent=T)) == "try-error"){
                         tabla <- data.frame(filepath = path, estado="error 03 en PPEElines - interseccion") #add no en PPEE
-                        return (list(NA,tabla, PPEElines(Tpoints = t2,
-                                                         buffer = PPEEbuffer,
-                                                         epsg = sp::CRS("+init=epsg:25829"))))
+                        return (list(NA,tabla))
                         
                     } else {
                         Slx <- PPEElines(Tpoints = t2,
@@ -376,7 +392,3 @@ PhotoCoodsToDF <- function (files, GPSPosition = "GPSPosition", ID = "newfilenam
     }
     return (XYdf)
 }
-
-
-
-
