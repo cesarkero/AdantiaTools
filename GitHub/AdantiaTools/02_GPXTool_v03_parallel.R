@@ -4,39 +4,39 @@ ifelse(Sys.info()[[1]] == "Windows",
        source("/data/home/cesarkero/Dropbox/Azure/00_functions.R"))
 
 #PARAMETROS
-gpx.folder <- choose_folder(caption = "Select gpx directory")
-output.folder <- choose_folder(caption = "Select output directory")
-PPEE.folder <- choose_folder(caption = "Select shp directory")
+g.folder <- choose.dir(default = "C:\\GitHub\\AdantiaTools\\02_GPXTool\\gpx",
+           caption = "Select folder with gpx files:")
+output.folder <- choose.dir(default = "C:\\GitHub\\AdantiaTools\\02_GPXTool\\output",
+                            caption = "Select output folder:")
+PPEE.folder <- choose.dir(default = "C:\\GitHub\\AdantiaTools\\000_GEO\\PPEE",
+                         caption = "Select folder with PPEE.shp (points):")
 
-t0<-Sys.time()
-#SET OBJECTS TO USE FUNCTIONS
 AtributosPPEE <- c("Cod_aero","Aero","Cod_parque","minTime","maxTime","tiempo_s",
                    "len","tecnico","filepath")
-files <- list.files(gpx.folder, pattern="*.gpx", full.names=T, recursive = T) #creates a list of files
+
+files <- list.files(g.folder, pattern="*.gpx", full.names=T, recursive = T) #creates a list of files
 PPEE <- readOGR(PPEE.folder, 'PPEE')
 PPEE25m <- gBuffer(PPEE, byid= T, width = 25, quadsegs=10) # create buffer 25m by id
 
 #-------------------------------------------------------------------------------
-#PROCESS
-
 # PBLAPPLY
 l1 <- pblapply(files, GPXTool, PPEEbuffer = PPEE25m, AtributosPPEE = AtributosPPEE) #PROCESS FILES WITH PBLAPPLY
 
 #-------------------------------------------------------------------------------
 # PARALLEL
-# no_cores <- detectCores() - 1 # Calculate the number of cores
-# cl <- makeCluster(no_cores, type="SOCK") # Initiate cluster
-# 
-# #export objects and functions
-# clusterExport(cl=cl, objects())
-# clusterExport(cl=cl, as.list(ls()),
-#               envir=environment())
-# l1 <- parLapply(cl,
-#                 files,
-#                 GPXTool,
-#                 PPEEbuffer = PPEE25m,
-#                 AtributosPPEE = AtributosPPEE)
-# stopCluster(cl)
+no_cores <- detectCores() - 1 # Calculate the number of cores
+cl <- makeCluster(no_cores, type="SOCK") # Initiate cluster
+
+#export objects and functions
+clusterExport(cl=cl, objects())
+clusterExport(cl=cl, as.list(ls()),
+              envir=environment())
+l1 <- parLapply(cl,
+                files,
+                GPXTool,
+                PPEEbuffer = PPEE25m,
+                AtributosPPEE = AtributosPPEE)
+stopCluster(cl)
 
 
 #-------------------------------------------------------------------------------
@@ -58,8 +58,7 @@ write.csv2(data.frame(shp0),
 write.csv2(tabla0,
            file = paste(output.folder, "\\", "archivos_procesados.csv", sep=""),
            row.names=F, na="")
-t1<-Sys.time()
-t1-t0
+
 #-----------------------------------------------------------------------
 # #benchmark de GPXTool
 # benchmark("lapply" = {l1 <- pblapply(files, GPXTool, PPEEbuffer = PPEE25m, AtributosPPEE = AtributosPPEE)},

@@ -74,34 +74,26 @@ library(tcltk)
 if("easycsv" %in% rownames(installed.packages()) == FALSE) {install.packages("easycsv")}
 library(easycsv)
 
-
 #_______________________________________________________________________________
 # CHOOSE DIRECTORY
-#select main directories in windows or linux
-choose_folder = function(caption = 'Select _______ file/directory:') {
+choose_gpx_folder = function(caption = 'Select _______ file/directory:') {
     if (Sys.info()[[1]] == "Windows") {
-        if (length(grep('gpx', caption, ignore.case = T)) != 0) {
-            path <- choose.dir(default = "C:\\GitHub\\AdantiaTools\\02_GPXTool\\gpx",
+        if (grep('gpx', caption, ignore.case = T) >=1) {
+            choose.dir(default = "C:\\GitHub\\AdantiaTools\\02_GPXTool\\gpx",
                        caption = "Select folder with gpx files:")
-            return (path)
-        } else if (length(grep('output', caption, ignore.case = T)) != 0) {
-            path <- choose.dir(default = "C:\\GitHub\\AdantiaTools\\02_GPXTool\\output",
+        } else if (grep('output', caption, ignore.case = T) >=1){
+            choose.dir(default = "C:\\GitHub\\AdantiaTools\\02_GPXTool\\output",
                        caption = "Select output folder:")
-            return (path)
-        } else if (length(grep('shp', caption, ignore.case = T)) != 0){
-            path <- choose.dir(default = "C:\\GitHub\\AdantiaTools\\000_GEO\\PPEE",
-                       caption = "Select folder with PPEE.shp (points):")
-            return (path)
-        } else {
-            return (caption)
         }
-    } else if (Sys.info()[[1]] == "Linux"){
-        path <- rstudioapi::selectDirectory(caption = caption)
-        return (path)
+         
     } else {
-        return ("Unknown choose_dir system")
+        ifelse(Sys.info()[[1]] == "Linux", rstudioapi::choose_dir(caption = caption),
+               tk_choose.dir(caption = caption))
     }
 }
+
+t1 <- 'Select .Gpx directory:'
+grep('gpx', t1, ignore.case = T) >=1
 
 
 #___________________________________________________________________________________________
