@@ -1,0 +1,63 @@
+<?xml version='1.0' encoding='Utf-8' standalone='yes' ?><gpx xmlns="http://www.topografix.com/GPX/1/0" version="1.0" creator="org.yriarte.tracklogger">
+<trk>
+<trkseg>
+<trkpt lon="-6.86435342" lat="42.01292572">
+  <ele>1753.0</ele>
+  <time>2016-11-17T09:26:59Z</time>
+</trkpt>
+<trkpt lon="-6.86426557" lat="42.01291794">
+  <ele>1755.0</ele>
+  <time>2016-11-17T09:27:55Z</time>
+</trkpt>
+<trkpt lon="-6.86418061" lat="42.01295651">
+  <ele>1755.0</ele>
+  <time>2016-11-17T09:28:01Z</time>
+</trkpt>
+<trkpt lon="-6.86410118" lat="42.01296151">
+  <ele>1756.0</ele>
+  <time>2016-11-17T09:28:07Z</time>
+</trkpt>
+<trkpt lon="-6.86403047" lat="42.01293003">
+  <ele>1755.0</ele>
+  <time>2016-11-17T09:28:13Z</time>
+</trkpt>
+<trkpt lon="-6.86398844" lat="42.0128838">
+  <ele>1755.0</ele>
+  <time>2016-11-17T09:28:25Z</time>
+</trkpt>
+<trkpt lon="-6.86405363" lat="42.01287437">
+  <ele>1755.0</ele>
+  <time>2016-11-17T09:28:40Z</time>
+</trkpt>
+<trkpt lon="-6.86409979" lat="42.01290392">
+  <ele>1754.0</ele>
+  <time>2016-11-17T09:28:49Z</time>
+</trkpt>
+<trkpt lon="-6.86417341" lat="42.01288487">
+  <ele>1754.0</ele>
+  <time>2016-11-17T09:28:58Z</time>
+</trkpt>
+<trkpt lon="-6.86422504" lat="42.01286085">
+  <ele>1755.0</ele>
+  <time>2016-11-17T09:29:04Z</time>
+</trkpt>
+<trkpt lon="-6.8642929" lat="42.01287356">
+  <ele>1754.0</ele>
+  <time>2016-11-17T09:29:34Z</time>
+</trkpt>
+<trkpt lon="-6.86436047" lat="42.01285872">
+  <ele>1753.0</ele>
+  <time>2016-11-17T09:30:04Z</time>
+</trkpt>
+<trkpt lon="-6.86442534" lat="42.01286249">
+  <ele>1753.0</ele>
+  <time>2016-11-17T09:30:13Z</time>
+</trkpt>
+<trkpt lon="-6.86434626" lat="42.0128954">
+  <ele>1753.0</ele>
+  <time>2016-11-17T09:30:25Z</time>
+</trkpt>
+
+</trkseg>
+</trk>
+</gpx>

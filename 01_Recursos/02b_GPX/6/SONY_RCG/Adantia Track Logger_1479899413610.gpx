@@ -1,0 +1,143 @@
+<?xml version='1.0' encoding='Utf-8' standalone='yes' ?><gpx xmlns="http://www.topografix.com/GPX/1/0" version="1.0" creator="org.yriarte.tracklogger">
+<trk>
+<trkseg>
+<trkpt lon="-7.67163149" lat="43.68912872">
+  <ele>456.0</ele>
+  <time>2016-11-23T12:10:22Z</time>
+</trkpt>
+<trkpt lon="-7.67145456" lat="43.68913251">
+  <ele>446.0</ele>
+  <time>2016-11-23T12:10:28Z</time>
+</trkpt>
+<trkpt lon="-7.67139596" lat="43.68915313">
+  <ele>441.0</ele>
+  <time>2016-11-23T12:10:52Z</time>
+</trkpt>
+<trkpt lon="-7.67135472" lat="43.68909838">
+  <ele>439.0</ele>
+  <time>2016-11-23T12:10:58Z</time>
+</trkpt>
+<trkpt lon="-7.67135265" lat="43.68905181">
+  <ele>442.0</ele>
+  <time>2016-11-23T12:11:13Z</time>
+</trkpt>
+<trkpt lon="-7.67136437" lat="43.68900578">
+  <ele>442.0</ele>
+  <time>2016-11-23T12:11:25Z</time>
+</trkpt>
+<trkpt lon="-7.6713478" lat="43.68895978">
+  <ele>441.0</ele>
+  <time>2016-11-23T12:11:31Z</time>
+</trkpt>
+<trkpt lon="-7.67137503" lat="43.68890854">
+  <ele>443.0</ele>
+  <time>2016-11-23T12:11:37Z</time>
+</trkpt>
+<trkpt lon="-7.67140144" lat="43.68884667">
+  <ele>447.0</ele>
+  <time>2016-11-23T12:11:43Z</time>
+</trkpt>
+<trkpt lon="-7.67139664" lat="43.68879591">
+  <ele>447.0</ele>
+  <time>2016-11-23T12:11:49Z</time>
+</trkpt>
+<trkpt lon="-7.6714254" lat="43.68874071">
+  <ele>447.0</ele>
+  <time>2016-11-23T12:11:55Z</time>
+</trkpt>
+<trkpt lon="-7.67151201" lat="43.68873949">
+  <ele>448.0</ele>
+  <time>2016-11-23T12:12:01Z</time>
+</trkpt>
+<trkpt lon="-7.67157929" lat="43.68877715">
+  <ele>445.0</ele>
+  <time>2016-11-23T12:12:16Z</time>
+</trkpt>
+<trkpt lon="-7.67156911" lat="43.68884056">
+  <ele>441.0</ele>
+  <time>2016-11-23T12:12:22Z</time>
+</trkpt>
+<trkpt lon="-7.67158612" lat="43.68890582">
+  <ele>446.0</ele>
+  <time>2016-11-23T12:12:28Z</time>
+</trkpt>
+<trkpt lon="-7.67163295" lat="43.68893784">
+  <ele>446.0</ele>
+  <time>2016-11-23T12:12:31Z</time>
+</trkpt>
+<trkpt lon="-7.67162699" lat="43.68900509">
+  <ele>440.0</ele>
+  <time>2016-11-23T12:12:37Z</time>
+</trkpt>
+<trkpt lon="-7.67164203" lat="43.68906357">
+  <ele>439.0</ele>
+  <time>2016-11-23T12:12:43Z</time>
+</trkpt>
+<trkpt lon="-7.67167489" lat="43.68912353">
+  <ele>440.0</ele>
+  <time>2016-11-23T12:12:49Z</time>
+</trkpt>
+<trkpt lon="-7.67172669" lat="43.68918974">
+  <ele>440.0</ele>
+  <time>2016-11-23T12:12:55Z</time>
+</trkpt>
+<trkpt lon="-7.6717166" lat="43.68924799">
+  <ele>438.0</ele>
+  <time>2016-11-23T12:13:01Z</time>
+</trkpt>
+<trkpt lon="-7.67172332" lat="43.6892961">
+  <ele>439.0</ele>
+  <time>2016-11-23T12:13:07Z</time>
+</trkpt>
+<trkpt lon="-7.67166629" lat="43.68936268">
+  <ele>438.0</ele>
+  <time>2016-11-23T12:13:13Z</time>
+</trkpt>
+<trkpt lon="-7.67160171" lat="43.68939898">
+  <ele>437.0</ele>
+  <time>2016-11-23T12:13:19Z</time>
+</trkpt>
+<trkpt lon="-7.67152918" lat="43.68938137">
+  <ele>436.0</ele>
+  <time>2016-11-23T12:14:37Z</time>
+</trkpt>
+<trkpt lon="-7.67148132" lat="43.68929783">
+  <ele>437.0</ele>
+  <time>2016-11-23T12:14:49Z</time>
+</trkpt>
+<trkpt lon="-7.6715392" lat="43.68924676">
+  <ele>438.0</ele>
+  <time>2016-11-23T12:14:55Z</time>
+</trkpt>
+<trkpt lon="-7.67159465" lat="43.68921437">
+  <ele>440.0</ele>
+  <time>2016-11-23T12:15:01Z</time>
+</trkpt>
+<trkpt lon="-7.67157537" lat="43.68913845">
+  <ele>440.0</ele>
+  <time>2016-11-23T12:15:07Z</time>
+</trkpt>
+<trkpt lon="-7.67154687" lat="43.68907088">
+  <ele>442.0</ele>
+  <time>2016-11-23T12:15:13Z</time>
+</trkpt>
+<trkpt lon="-7.67155426" lat="43.68902525">
+  <ele>444.0</ele>
+  <time>2016-11-23T12:15:19Z</time>
+</trkpt>
+<trkpt lon="-7.67145776" lat="43.68900591">
+  <ele>450.0</ele>
+  <time>2016-11-23T12:15:31Z</time>
+</trkpt>
+<trkpt lon="-7.6714916" lat="43.68911097">
+  <ele>446.0</ele>
+  <time>2016-11-23T12:15:40Z</time>
+</trkpt>
+<trkpt lon="-7.67143689" lat="43.68918306">
+  <ele>444.0</ele>
+  <time>2016-11-23T12:15:52Z</time>
+</trkpt>
+
+</trkseg>
+</trk>
+</gpx>
